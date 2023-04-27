@@ -8,41 +8,26 @@ package meteordevelopment.meteorclient.systems.modules.misc;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.gui.GuiTheme;
-import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
-import meteordevelopment.meteorclient.gui.widgets.containers.WHorizontalList;
-import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.mixin.TextHandlerAccessor;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.PrimitiveIterator;
-import java.util.Random;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 public class BookBot extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -51,6 +36,13 @@ public class BookBot extends Module {
         .name("mode")
         .description("What kind of text to write.")
         .defaultValue(Mode.Random)
+        .build()
+    );
+
+    private final Setting<String> textPath = sgGeneral.add(new StringSetting.Builder()
+        .name("text-path")
+        .defaultValue(new File(MeteorClient.FOLDER, "bookbot.txt").getAbsolutePath())
+        .visible(() -> false)
         .build()
     );
 
@@ -95,59 +87,28 @@ public class BookBot extends Module {
         .build()
     );
 
-    private File file = new File(MeteorClient.FOLDER, "bookbot.txt");
-    private final PointerBuffer filters;
-
+    private List<String> lines;
     private int delayTimer, bookCount;
     private Random random;
 
     public BookBot() {
         super(Categories.Misc, "book-bot", "Automatically writes in books.");
-
-        if (!file.exists()) {
-            file = null;
-        }
-
-        filters = BufferUtils.createPointerBuffer(1);
-
-        ByteBuffer txtFilter = MemoryUtil.memASCII("*.txt");
-
-        filters.put(txtFilter);
-        filters.rewind();
     }
 
     @Override
     public WWidget getWidget(GuiTheme theme) {
-        WHorizontalList list = theme.horizontalList();
-
-        WButton selectFile = list.add(theme.button("Select File")).widget();
-
-        WLabel fileName = list.add(theme.label((file != null && file.exists()) ? file.getName() : "No file selected.")).widget();
-
-        selectFile.action = () -> {
-            String path = TinyFileDialogs.tinyfd_openFileDialog(
-                "Select File",
-                new File(MeteorClient.FOLDER, "bookbot.txt").getAbsolutePath(),
-                filters,
-                null,
-                false
-            );
-
-            if (path != null) {
-                file = new File(path);
-                fileName.set(file.getName());
-            }
-        };
-
-        return list;
+        return Utils.fileSelectWidget(textPath, theme);
     }
 
     @Override
     public void onActivate() {
-        if ((file == null || !file.exists()) && mode.get() == Mode.File) {
-            info("No file selected, please select a file in the GUI.");
-            toggle();
-            return;
+        if (mode.get() == Mode.File) {
+            try {
+                lines = Files.readAllLines(Path.of(textPath.get()));
+            } catch (IOException e) {
+                error("No file selected, please select a file in the GUI.");
+                toggle();
+            }
         }
 
         random = new Random();
@@ -161,6 +122,7 @@ public class BookBot extends Module {
 
         // Check if there is a book to write
         if (!writableBook.found()) {
+            error("You need a writable book to use this module.");
             toggle();
             return;
         }
@@ -181,56 +143,21 @@ public class BookBot extends Module {
         delayTimer = delay.get();
 
         // Write book
-
         if (mode.get() == Mode.Random) {
             int origin = onlyAscii.get() ? 0x21 : 0x0800;
             int bound = onlyAscii.get() ? 0x7E : 0x10FFFF;
 
+            // Generate a random load of ints to use as random characters
             writeBook(
-                // Generate a random load of ints to use as random characters
                 random.ints(origin, bound)
                     .filter(i -> !Character.isWhitespace(i) && i != '\r' && i != '\n')
                     .iterator()
             );
         } else if (mode.get() == Mode.File) {
-            // Ignore if somehow the file got deleted
-            if ((file == null || !file.exists()) && mode.get() == Mode.File) {
-                info("No file selected, please select a file in the GUI.");
+            if (lines == null || lines.isEmpty()) {
+                error("The bookbot file is empty or not found. (%s)", textPath.get());
                 toggle();
-                return;
-            }
-
-            // Handle the file being empty
-            if (file.length() == 0) {
-                MutableText message = Text.literal("");
-                message.append(Text.literal("The bookbot file is empty! ").formatted(Formatting.RED));
-                message.append(Text.literal("Click here to edit it.")
-                    .setStyle(Style.EMPTY
-                            .withFormatting(Formatting.UNDERLINE, Formatting.RED)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file.getAbsolutePath()))
-                    )
-                );
-                info(message);
-                toggle();
-                return;
-            }
-
-            // Read each line of the file and construct a string with the needed line breaks
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                StringBuilder file = new StringBuilder();
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    file.append(line).append('\n');
-                }
-
-                reader.close();
-
-                // Write the file string to a book
-                writeBook(file.toString().chars().iterator());
-            } catch (IOException ignored) {
-                error("Failed to read the file.");
-            }
+            } else writeBook(String.join("\n", lines).chars().iterator());
         }
     }
 
@@ -294,26 +221,6 @@ public class BookBot extends Module {
         mc.player.networkHandler.sendPacket(new BookUpdateC2SPacket(mc.player.getInventory().selectedSlot, pages, Optional.of(title)));
 
         bookCount++;
-    }
-
-    @Override
-    public NbtCompound toTag() {
-        NbtCompound tag = super.toTag();
-
-        if (file != null && file.exists()) {
-            tag.putString("file", file.getAbsolutePath());
-        }
-
-        return tag;
-    }
-
-    @Override
-    public Module fromTag(NbtCompound tag) {
-        if (tag.contains("file")) {
-            file = new File(tag.getString("file"));
-        }
-
-        return super.fromTag(tag);
     }
 
     public enum Mode {
