@@ -447,12 +447,10 @@ public class Modules extends System<Modules> {
         add(new AutoJump());
         add(new AutoWalk());
         add(new Blink());
-        add(new BoatFly());
         add(new ClickTP());
         add(new ElytraBoost());
         add(new ElytraFly());
         add(new EntityControl());
-        add(new EntitySpeed());
         add(new FastClimb());
         add(new Flight());
         add(new GUIMove());
@@ -477,7 +475,9 @@ public class Modules extends System<Modules> {
 
     private void initRender() {
         add(new BetterTooltips());
+        add(new BlockESP());
         add(new BlockSelection());
+        add(new Blur());
         add(new BossStack());
         add(new Breadcrumbs());
         add(new BreakIndicators());
@@ -498,21 +498,19 @@ public class Modules extends System<Modules> {
         add(new Marker());
         add(new Nametags());
         add(new NoRender());
-        add(new BlockESP());
+        add(new PopChams());
         add(new StorageESP());
         add(new TimeChanger());
         add(new Tracers());
         add(new Trail());
         add(new Trajectories());
+        add(new TunnelESP());
         add(new UnfocusedCPU());
         add(new VoidESP());
         add(new WallHack());
         add(new WaypointsModule());
         add(new Xray());
         add(new Zoom());
-        add(new Blur());
-        add(new PopChams());
-        add(new TunnelESP());
     }
 
     private void initWorld() {
