@@ -14,9 +14,7 @@ import meteordevelopment.meteorclient.systems.modules.player.FakePlayer;
 import meteordevelopment.meteorclient.utils.entity.fakeplayer.FakePlayerEntity;
 import meteordevelopment.meteorclient.utils.entity.fakeplayer.FakePlayerManager;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
-import net.minecraft.command.CommandSource;
-
-import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
+import net.minecraft.client.network.ClientCommandSource;
 
 public class FakePlayerCommand extends Command {
     public FakePlayerCommand() {
@@ -24,7 +22,7 @@ public class FakePlayerCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<ClientCommandSource> builder) {
         builder.then(literal("add")
             .executes(context -> {
                 FakePlayer fakePlayer = Modules.get().get(FakePlayer.class);

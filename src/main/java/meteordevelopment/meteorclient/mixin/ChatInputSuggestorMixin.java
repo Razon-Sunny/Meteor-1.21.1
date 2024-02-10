@@ -12,6 +12,7 @@ import meteordevelopment.meteorclient.commands.Commands;
 import meteordevelopment.meteorclient.systems.config.Config;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.command.CommandSource;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +35,7 @@ public abstract class ChatInputSuggestorMixin {
     @Shadow
     protected abstract void showCommandSuggestions();
 
+    @SuppressWarnings("unchecked")
     @Inject(method = "refresh",
         at = @At(value = "INVOKE", target = "Lcom/mojang/brigadier/StringReader;canRead()Z", remap = false),
         cancellable = true,
@@ -46,12 +48,12 @@ public abstract class ChatInputSuggestorMixin {
             reader.setCursor(reader.getCursor() + length);
 
             if (this.parse == null) {
-                this.parse = Commands.DISPATCHER.parse(reader, Commands.COMMAND_SOURCE);
+                this.parse = (ParseResults<CommandSource>) (Object) Commands.DISPATCHER.parse(reader, Commands.getCommandSource());
             }
 
             int cursor = textField.getCursor();
             if (cursor >= 1 && (this.window == null || !this.completingSuggestions)) {
-                this.pendingSuggestions = Commands.DISPATCHER.getCompletionSuggestions(this.parse, cursor);
+                this.pendingSuggestions = Commands.DISPATCHER.getCompletionSuggestions((ParseResults<ClientCommandSource>) (Object) this.parse, cursor);
                 this.pendingSuggestions.thenRun(() -> {
                     if (this.pendingSuggestions.isDone()) {
                         this.showCommandSuggestions();

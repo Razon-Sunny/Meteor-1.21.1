@@ -18,7 +18,7 @@ import meteordevelopment.meteorclient.systems.modules.misc.Notebot;
 import meteordevelopment.meteorclient.utils.notebot.song.Note;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.enums.Instrument;
-import net.minecraft.command.CommandSource;
+import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
@@ -32,8 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
-
 public class NotebotCommand extends Command {
     private final static SimpleCommandExceptionType INVALID_SONG = new SimpleCommandExceptionType(Text.literal("Invalid song."));
 
@@ -45,7 +43,7 @@ public class NotebotCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<ClientCommandSource> builder) {
         builder.then(literal("help").executes(ctx -> {
             Util.getOperatingSystem().open("https://github.com/MeteorDevelopment/meteor-client/wiki/Notebot-Guide");
             return SINGLE_SUCCESS;
