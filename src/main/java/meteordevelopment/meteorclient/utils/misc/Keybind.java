@@ -11,8 +11,6 @@ import net.minecraft.nbt.NbtCompound;
 
 import java.util.Objects;
 
-import static org.lwjgl.glfw.GLFW.*;
-
 public class Keybind implements ISerializable<Keybind>, ICopyable<Keybind> {
     private boolean isKey;
     private int value;
@@ -42,8 +40,7 @@ public class Keybind implements ISerializable<Keybind>, ICopyable<Keybind> {
     }
 
     public boolean canBindTo(boolean isKey, int value) {
-        if (isKey) return value != GLFW_KEY_ESCAPE;
-        return value != GLFW_MOUSE_BUTTON_LEFT && value != GLFW_MOUSE_BUTTON_RIGHT;
+        return true;
     }
 
     public void set(boolean isKey, int value) {
