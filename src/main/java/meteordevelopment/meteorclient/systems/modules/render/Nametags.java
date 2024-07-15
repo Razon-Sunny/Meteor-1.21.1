@@ -35,7 +35,9 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EnchantmentTags;
@@ -58,6 +60,13 @@ public class Nametags extends Module {
         .name("entities")
         .description("Select entities to draw nametags on.")
         .defaultValue(EntityType.PLAYER, EntityType.ITEM)
+        .build()
+    );
+
+    private final Setting<List<Item>> ignoredItems = sgGeneral.add(new ItemListSetting.Builder()
+        .name("ignored-items")
+        .description("Items to ignore.")
+        .defaultValue(Items.AIR)
         .build()
     );
 
@@ -707,5 +716,24 @@ public class Nametags extends Module {
 
     public boolean playerNametags() {
         return isActive() && entities.get().contains(EntityType.PLAYER);
+    }
+
+    public ArrayList<ItemStack> getItems() {
+
+
+        int count = getRenderCount();
+        ArrayList<ItemStack> items = new ArrayList<>();
+
+        for (int i = count - 1; i > -1; i--) {
+            Entity entity = entityList.get(i);
+            EntityType<?> type = entity.getType();
+            if (type == EntityType.ITEM && !ignoredItems.get().contains(((ItemEntity) entity).getStack().getItem())) {
+                items.add(((ItemEntity) entity).getStack());
+            }
+        }
+
+        items.sort(Comparator.comparing((ItemStack itemStack) -> itemStack.getName().getString())
+                             .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
+        return items;
     }
 }
