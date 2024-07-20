@@ -719,8 +719,6 @@ public class Nametags extends Module {
     }
 
     public ArrayList<ItemStack> getItems() {
-
-
         int count = getRenderCount();
         ArrayList<ItemStack> items = new ArrayList<>();
 
@@ -733,7 +731,7 @@ public class Nametags extends Module {
         }
 
         items.sort(Comparator.comparing((ItemStack itemStack) -> itemStack.getName().getString())
-                             .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
+            .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
         return items;
     }
 }

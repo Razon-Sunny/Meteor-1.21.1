@@ -5,6 +5,8 @@
 
 package meteordevelopment.meteorclient.systems.hud.elements;
 
+import static meteordevelopment.meteorclient.MeteorClient.mc;
+
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.hud.Hud;
@@ -16,13 +18,12 @@ import meteordevelopment.meteorclient.systems.modules.render.Nametags;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
-
-import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class InventoryHud extends HudElement {
     public static final HudElementInfo<InventoryHud> INFO = new HudElementInfo<>(Hud.GROUP, "inventory", "Displays your inventory.", InventoryHud::new);
@@ -39,29 +40,6 @@ public class InventoryHud extends HudElement {
         .build()
     );
 
-    interface SupportedSourcesInterface { ArrayList<ItemStack> getItems(); }
-    private enum SupportedSources implements SupportedSourcesInterface
-    {
-        None {
-            @Override
-            public ArrayList<ItemStack> getItems() { return new ArrayList<>(); }
-        },
-        Inventory {
-            @Override
-            public ArrayList<ItemStack> getItems() {
-                if (mc.player == null) return new ArrayList<>();
-                ArrayList<ItemStack> result = new ArrayList<>(3 * 9);
-                for (int row = 0; row < 3; row++)
-                    for (int i = 0; i < 9; i++)
-                        result.add(mc.player.getInventory().getStack((row + 1) * 9 + i));
-                return result;
-            }
-        },
-        Nametags {
-            @Override
-            public ArrayList<ItemStack> getItems() { return Modules.get().get(Nametags.class).getItems(); }
-        }
-    };
     private final Setting<SupportedSources> selectedSource = sgGeneral.add(new EnumSetting.Builder<SupportedSources>()
         .name("selected-source")
         .description("From which source to display items.")
@@ -69,8 +47,10 @@ public class InventoryHud extends HudElement {
         .build()
     );
 
-    private int containerItemsWidth = 9, containerItemsHeight = 3;
+    private int containerItemsWidth = 9;
+    private int containerItemsHeight = 3;
     private boolean assumeDefaultSize = true;
+
     public final Setting<Integer> sourceContainerWidth = sgGeneral.add(new IntSetting.Builder()
         .name("source-container-width")
         .description("Maximum width of the input container")
@@ -79,10 +59,10 @@ public class InventoryHud extends HudElement {
             resizeContainerItems(integer, containerItemsHeight);
         })
         .min(1)
-        .max(20)
         .sliderRange(1, 20)
         .build()
     );
+
     public final Setting<Integer> sourceContainerHeight = sgGeneral.add(new IntSetting.Builder()
         .name("source-container-height")
         .description("Maximum height of the input container")
@@ -91,7 +71,6 @@ public class InventoryHud extends HudElement {
             resizeContainerItems(containerItemsWidth, integer);
         })
         .min(1)
-        .max(20)
         .sliderRange(1, 20)
         .build()
     );
@@ -121,8 +100,7 @@ public class InventoryHud extends HudElement {
     );
 
     private ArrayList<ItemStack> containerItems = new ArrayList<>();
-    void resizeContainerItems(int newWidth, int newHeight)
-    {
+    void resizeContainerItems(int newWidth, int newHeight) {
         int size = newWidth * newHeight;
         containerItems = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
@@ -187,10 +165,11 @@ public class InventoryHud extends HudElement {
     }
 
     private void calculateSize(int w, int h) {
-        if (background.get() == Background.Texture)
+        if (background.get() == Background.Texture) {
             setSize((8 + (w - 1) * 18 + 24) * scale.get(), (7 + (h - 1) * 18 + 24) * scale.get());
-        else
+        } else {
             setSize((1 + (w - 1) * 18 + 17) * scale.get(), (1 + (h - 1) * 18 + 17) * scale.get());
+        }
     }
 
     private void drawBackground(HudRenderer renderer, int x, int y, Color color) {
@@ -220,6 +199,31 @@ public class InventoryHud extends HudElement {
 
         return null;
     }
+
+    private enum SupportedSources {
+        None {
+            @Override
+            public ArrayList<ItemStack> getItems() { return new ArrayList<>(); }
+        },
+        Inventory {
+            @Override
+            public ArrayList<ItemStack> getItems() {
+                if (mc.player == null) return new ArrayList<>();
+                ArrayList<ItemStack> result = new ArrayList<>(3 * 9);
+                for (int row = 0; row < 3; row++) {
+                    for (int i = 0; i < 9; i++) {
+                        result.add(mc.player.getInventory().getStack((row + 1) * 9 + i));
+                    }
+                }
+                return result;
+            }
+        },
+        Nametags {
+            @Override
+            public ArrayList<ItemStack> getItems() { return Modules.get().get(Nametags.class).getItems(); }
+        };
+        public abstract ArrayList<ItemStack> getItems();
+    };
 
     public enum Background {
         None(162, 54),
