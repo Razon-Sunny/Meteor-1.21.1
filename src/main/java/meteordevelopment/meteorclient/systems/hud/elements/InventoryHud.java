@@ -15,10 +15,12 @@ import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.Nametags;
+import meteordevelopment.meteorclient.systems.modules.render.ESP;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
@@ -40,10 +42,22 @@ public class InventoryHud extends HudElement {
         .build()
     );
 
+    private final Setting<Boolean> isAutoconf = sgGeneral.add(new BoolSetting.Builder()
+        .name("autoconfigure-module")
+        .description("Automatically enables relevant features of a selected module")
+        .defaultValue(true)
+        .build()
+    );
+
     private final Setting<SupportedSources> selectedSource = sgGeneral.add(new EnumSetting.Builder<SupportedSources>()
         .name("selected-source")
         .description("From which source to display items.")
         .defaultValue(SupportedSources.Inventory)
+        .onChanged(source -> {
+            if (isAutoconf.get()) {
+                source.configure();
+            }
+        })
         .build()
     );
 
@@ -202,8 +216,6 @@ public class InventoryHud extends HudElement {
 
     private enum SupportedSources {
         None {
-            @Override
-            public ArrayList<ItemStack> getItems() { return new ArrayList<>(); }
         },
         Inventory {
             @Override
@@ -220,9 +232,26 @@ public class InventoryHud extends HudElement {
         },
         Nametags {
             @Override
+            public void configure() {
+                if (!Modules.get().get(Nametags.class).isActive()) Modules.get().get(Nametags.class).toggle();
+                ((Set<EntityType<?>>) Modules.get().get(Nametags.class).settings.getGroup("General").get("entities").get()).add(EntityType.ITEM);
+            }
+            @Override
             public ArrayList<ItemStack> getItems() { return Modules.get().get(Nametags.class).getItems(); }
+        },
+        ESP {
+            @Override
+            public void configure() {
+                if (!Modules.get().get(ESP.class).isActive()) Modules.get().get(ESP.class).toggle();
+                ((Set<EntityType<?>>) Modules.get().get(ESP.class).settings.getGroup("General").get("entities").get()).add(EntityType.ITEM);
+            }
+            @Override
+            public ArrayList<ItemStack> getItems() { return Modules.get().get(ESP.class).getItems(); }
         };
-        public abstract ArrayList<ItemStack> getItems();
+        public void configure() {}
+        public ArrayList<ItemStack> getItems() {
+            return new ArrayList<>();
+        }
     };
 
     public enum Background {
