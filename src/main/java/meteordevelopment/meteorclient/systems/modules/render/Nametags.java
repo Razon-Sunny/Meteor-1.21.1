@@ -237,7 +237,7 @@ public class Nametags extends Module {
         .build()
     );
 
-    //Items
+    // Items
 
     private final Setting<Boolean> itemCount = sgItems.add(new BoolSetting.Builder()
         .name("show-count")
@@ -340,6 +340,7 @@ public class Nametags extends Module {
                 if (EntityUtils.getGameMode((PlayerEntity) entity) == null && ignoreBots.get()) continue;
                 if (Friends.get().isFriend((PlayerEntity) entity) && ignoreFriends.get()) continue;
             }
+            if (type == EntityType.ITEM && ignoredItems.get().contains(((ItemEntity) entity).getStack().getItem())) continue;
 
             if (!culling.get() || PlayerUtils.isWithinCamera(entity, maxCullRange.get())) {
                 entityList.add(entity);
@@ -364,10 +365,8 @@ public class Nametags extends Module {
 
             if (NametagUtils.to2D(pos, scale.get())) {
                 if (type == EntityType.PLAYER) renderNametagPlayer(event, (PlayerEntity) entity, shadow);
-                else if (type == EntityType.ITEM && !ignoredItems.get().contains(((ItemEntity) entity).getStack().getItem()))
-                    renderNametagItem(((ItemEntity) entity).getStack(), shadow);
-                else if (type == EntityType.ITEM_FRAME)
-                    renderNametagItem(((ItemFrameEntity) entity).getHeldItemStack(), shadow);
+                else if (type == EntityType.ITEM) renderNametagItem(((ItemEntity) entity).getStack(), shadow);
+                else if (type == EntityType.ITEM_FRAME) renderNametagItem(((ItemFrameEntity) entity).getHeldItemStack(), shadow);
                 else if (type == EntityType.TNT) renderTntNametag((TntEntity) entity, shadow);
                 else if (entity instanceof LivingEntity) renderGenericNametag((LivingEntity) entity, shadow);
             }
@@ -726,7 +725,7 @@ public class Nametags extends Module {
         for (int i = count - 1; i > -1; i--) {
             Entity entity = entityList.get(i);
             EntityType<?> type = entity.getType();
-            if (type == EntityType.ITEM && !ignoredItems.get().contains(((ItemEntity) entity).getStack().getItem())) {
+            if (type == EntityType.ITEM) {
                 items.add(((ItemEntity) entity).getStack());
             }
         }
